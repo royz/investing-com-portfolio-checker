@@ -43,6 +43,7 @@ class Investing:
         self.driver.get('https://www.investing.com/portfolio/')
 
     def update_data(self):
+        print('updating data...')
         try:
             soup = BeautifulSoup(self.driver.page_source, 'html.parser')
             table_rows = soup.find('table', {'class': 'js-table-sortable'}).find('tbody').find_all('tr')
@@ -74,9 +75,8 @@ class Investing:
         for i, row in enumerate(self.data):
             self.table.insert(parent='', index='end', iid=i, values=row)
 
-        self.root.mainloop()
-
     def update_window(self):
+        print('updating...')
         try:
             # update data from site
             self.update_data()
@@ -110,19 +110,22 @@ if __name__ == '__main__':
     print('1. reminder mode')
     print('2. preview mode')
     mode = input('mode: ')
+    if mode == '1':
+        interval = int(input('enter an update interval in minutes: '))
 
     investing = Investing()
     investing.login()
 
     if mode == '1':
-        interval = int(input('enter an update interval in minutes: '))
         while True:
             investing.update_data()
             investing.render_window()
+            investing.root.mainloop()
             time.sleep(interval * 60)
     elif mode == '2':
         investing.update_data()
         investing.render_window()
         investing.update_window()
+        investing.root.mainloop()
     else:
         print('choose a valid mode...')
