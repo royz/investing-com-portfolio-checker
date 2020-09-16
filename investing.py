@@ -13,8 +13,8 @@ from datetime import datetime
 
 
 class Investing:
-    def __init__(self):
-        self.driver = None
+    def __init__(self, driver):
+        self.driver = driver
         self.email = config.email
         self.password = config.password
         self.headers = ['Name', 'Last', 'Chg %', 'Time']
@@ -22,8 +22,7 @@ class Investing:
         self.root = None
         self.table = None
 
-    def login(self, driver):
-        self.driver = driver
+    def login(self):
         print('opening login page')
         self.driver.get('https://www.investing.com/')
         print('waiting for page to load')
@@ -55,7 +54,14 @@ class Investing:
             pass
 
     def render_window(self):
+        global style
+
         self.root = tk.Tk()
+
+        # fix style for broken tkinter version
+        style = ttk.Style()
+        style.map("Treeview", foreground=fixed_map("foreground"), background=fixed_map("background"))
+
         self.root.resizable(False, False)
         self.root.title('investing.com portfolio')
         self.table = ttk.Treeview(self.root, height=len(self.data))
@@ -68,13 +74,14 @@ class Investing:
             self.table.column(header, anchor=tk.W, width=100, minwidth=100)
             self.table.heading(header, text=header, anchor=tk.W)
 
+        # add data
+        for i, row in enumerate(self.data):
+            tags = self.get_tags(row[2])
+            self.table.insert(parent='', index='end', iid=i, values=row, tags=tags)
+
         # format tags
         self.table.tag_configure('red', background='#ffcbcb')
         self.table.tag_configure('green', background='#99f3bd')
-
-        # add data
-        for i, row in enumerate(self.data):
-            self.table.insert(parent='', index='end', iid=i, values=row, tags=self.get_tags(row[2]))
 
     @staticmethod
     def get_tags(chg):
@@ -85,6 +92,7 @@ class Investing:
             tags = ('red',)
         else:
             tags = (None,)
+        print(chg, tags)
         return tags
 
     def update_window(self):
@@ -98,14 +106,26 @@ class Investing:
 
             # add data
             for i, row in enumerate(self.data):
-                self.table.insert(parent='', index='end', iid=i, values=row, tags=self.get_tags(row[2]))
+                tags = self.get_tags(row[2])
+                self.table.insert(parent='', index='end', iid=i, values=row, tags=tags)
+
+            # format tags
+            self.table.tag_configure('red', background='#ffcbcb')
+            self.table.tag_configure('green', background='#99f3bd')
 
             self.root.after(1000, self.update_window)
-        except:
+        except Exception as e:
+            print(e)
             quit()
 
 
+def fixed_map(option):
+    return [elm for elm in style.map("Treeview", query_opt=option) if elm[:2] != ("!disabled", "!selected")]
+
+
 if __name__ == '__main__':
+    style = None
+
     print('choose a mode:')
     print('1. reminder mode')
     print('2. preview mode')
